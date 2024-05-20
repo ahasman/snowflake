@@ -29,22 +29,23 @@ ingredients_list = st.multiselect(
     ,max_selections=5
 )
 if ingredients_list:
-    
-    ingredients_string = ''
+    ingredients_string = ', '.join(ingredients_list)  # Join the list into a string
 
     for fruit_chosen in ingredients_list:
-            ingredients_string += fruit_chosen+ ' '
+        search_on = pd_df.loc[pd_df['FRUIT_NAME'] == fruit_chosen, 'SEARCH_ON'].iloc[0]
+        st.write('The search value for', fruit_chosen, 'is', search_on, '.')
 
-            search_on=pd_df.loc[pd_df['FRUIT_NAME'] == fruit_chosen, 'SEARCH_ON'].iloc[0]
-            st.write('The search value for ', fruit_chosen,' is ', search_on, '.')
+        # Get the nutritional info from Fruityvice API for the chosen fruit
+        fruityvice_response = requests.get(f"https://fruityvice.com/api/fruit/{search_on}")
+        if fruityvice_response.ok:
+            fv_df = pd.DataFrame(fruityvice_response.json())
+            st.dataframe(fv_df, use_container_width=True)  # Display the nutritional info
 
-            fruityvice_response = requests.get("https://fruityvice.com/api/fruit/watermelon")
-            fv_df = st.dataframe(data=fruityvice_response.json(),use_container_width=True)
-        
-    #st.write(ingredients_string)
-
-    my_insert_stmt = """ insert into smoothies.public.orders(ingredients,name_on_order)
-            values ('""" + ingredients_string + """','"""+name_on_order+ """')"""
+    # Prepare the insert statement
+    my_insert_stmt = f"""
+        INSERT INTO smoothies.public.orders(ingredients, name_on_order)
+        VALUES ('{ingredients_string}', '{name_on_order}')
+    """
 
     #st.write(my_insert_stmt)
     time_to_insert = st.button('Submit Order')
